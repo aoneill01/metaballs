@@ -4,22 +4,26 @@ const CELL_COUNT = 80
 const SQUARE_SIZE = 2 / CELL_COUNT
 
 class Metaballs extends HTMLElement {
-  canvas
-  gl
-  program
-  positionAttributeLocation
-  positionBuffer
-  circles = initialCircles
-  points = Array.from({ length: CELL_COUNT + 1 }, () => new Array(CELL_COUNT + 1).fill(0))
-  previous
-
   constructor() {
     super()
 
+    this.circles = initialCircles
+    this.points = Array.from({ length: CELL_COUNT + 1 }, () => new Array(CELL_COUNT + 1).fill(0))
+
     const shadow = this.attachShadow({ mode: 'open' })
+
+    const style = document.createElement('style')
+    style.textContent = `
+      canvas {
+        width: 100vw;
+      }
+    `
+
     this.canvas = document.createElement('canvas')
     this.canvas.width = 800
     this.canvas.height = 800
+
+    shadow.appendChild(style)
     shadow.appendChild(this.canvas)
 
     this.initWebgl()
