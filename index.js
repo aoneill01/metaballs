@@ -15,7 +15,7 @@ class Metaballs extends HTMLElement {
     const style = document.createElement('style')
     style.textContent = `
       canvas {
-        width: 100vw;
+        width: 100vmax;
       }
     `
 
@@ -70,8 +70,9 @@ class Metaballs extends HTMLElement {
 
   draw(timestamp) {
     if (this.previous === undefined) this.previous = timestamp
-    const elapsed = timestamp - this.previous
-    if (elapsed) this.updatePoints(elapsed)
+    let elapsed = timestamp - this.previous
+    if (!elapsed || elapsed > 50) elapsed = 50
+    this.updatePoints(elapsed)
     this.previous = timestamp
 
     this.resize()
