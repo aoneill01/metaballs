@@ -22,7 +22,7 @@ class Metaballs extends HTMLElement {
     const style = document.createElement('style')
     style.textContent = `
       canvas {
-        width: 100vw;
+        width: 100vmax;
       }
     `
 
@@ -85,8 +85,9 @@ class Metaballs extends HTMLElement {
 
   draw(timestamp) {
     if (this.previous === undefined) this.previous = timestamp
-    const elapsed = timestamp - this.previous
-    if (elapsed) update(elapsed, this.points, this.circles)
+    let elapsed = timestamp - this.previous
+    if (!elapsed || elapsed > 50) elapsed = 50
+    update(elapsed, this.points, this.circles)
     this.previous = timestamp
 
     this.resize()
@@ -102,9 +103,6 @@ class Metaballs extends HTMLElement {
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.weightBuffer)
     this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(weights), this.gl.STATIC_DRAW)
 
-    // const positions = getPositions(this.points)
-    // this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.positionBuffer)
-    // this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(positions), this.gl.STATIC_DRAW)
     {
       const numComponents = 2
       const type = this.gl.FLOAT
