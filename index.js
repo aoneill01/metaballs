@@ -1,14 +1,21 @@
-import { createShader, createProgram, initialCircles, getPositions } from './helpers.js'
+import {
+  createShader,
+  createProgram,
+  initialCircles,
+  createPoints,
+  update,
+  generateTriangles,
+  generateWeights,
+} from './helpers.js'
 
 const CELL_COUNT = 80
-const SQUARE_SIZE = 2 / CELL_COUNT
 
 class Metaballs extends HTMLElement {
   constructor() {
     super()
 
     this.circles = initialCircles
-    this.points = Array.from({ length: CELL_COUNT + 1 }, () => new Array(CELL_COUNT + 1).fill(0))
+    this.points = createPoints(CELL_COUNT)
 
     const shadow = this.attachShadow({ mode: 'open' })
 
@@ -33,26 +40,29 @@ class Metaballs extends HTMLElement {
     this.gl = this.canvas.getContext('webgl')
 
     const vertexShaderSource = `
-  // an attribute will receive data from a buffer
   attribute vec4 a_position;
+  attribute float a_weight;
 
-  // all shaders have a main function
+  varying lowp float v_weight;
+
   void main() {
-
-    // gl_Position is a special variable a vertex shader
-    // is responsible for setting
     gl_Position = a_position;
+    v_weight = a_weight;
   }`
 
     const fragmentShaderSource = `
-  // fragment shaders don't have a default precision so we need
-  // to pick one. mediump is a good default
   precision mediump float;
 
+  varying mediump float v_weight;
+
   void main() {
-    // gl_FragColor is a special variable a fragment shader
-    // is responsible for setting
-    gl_FragColor = vec4(0.008, 0.502, 0.565, 1);
+    if (v_weight < 1.0) {
+      float factor = v_weight - .5;
+      if (factor < 0.0) factor = 0.0;
+      gl_FragColor = vec4(0.008, 0.502, 0.565, 1.0) * factor + vec4(0.02, 0.4, 0.553, 1) * (1.0 - factor);
+    } else {
+      gl_FragColor = vec4(0.008, 0.502, 0.565, 1.0);
+    }
   }`
 
     const vertexShader = createShader(this.gl, this.gl.VERTEX_SHADER, vertexShaderSource)
@@ -61,8 +71,13 @@ class Metaballs extends HTMLElement {
     this.program = createProgram(this.gl, vertexShader, fragmentShader)
 
     this.positionAttributeLocation = this.gl.getAttribLocation(this.program, 'a_position')
-
+    this.positions = generateTriangles(CELL_COUNT)
     this.positionBuffer = this.gl.createBuffer()
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.positionBuffer)
+    this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(this.positions), this.gl.STATIC_DRAW)
+
+    this.weightAttributeLocation = this.gl.getAttribLocation(this.program, 'a_weight')
+    this.weightBuffer = this.gl.createBuffer()
 
     this.draw = this.draw.bind(this)
     window.requestAnimationFrame(this.draw)
@@ -71,7 +86,7 @@ class Metaballs extends HTMLElement {
   draw(timestamp) {
     if (this.previous === undefined) this.previous = timestamp
     const elapsed = timestamp - this.previous
-    if (elapsed) this.updatePoints(elapsed)
+    if (elapsed) update(elapsed, this.points, this.circles)
     this.previous = timestamp
 
     this.resize()
@@ -83,75 +98,38 @@ class Metaballs extends HTMLElement {
 
     this.gl.useProgram(this.program)
 
-    this.gl.enableVertexAttribArray(this.positionAttributeLocation)
+    const weights = generateWeights(this.points)
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.weightBuffer)
+    this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(weights), this.gl.STATIC_DRAW)
 
-    const positions = getPositions(this.points)
-    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.positionBuffer)
-    this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(positions), this.gl.STATIC_DRAW)
-    const size = 2
-    const type = this.gl.FLOAT
-    const normalize = false
-    const stride = 0
-    const offset = 0
-    this.gl.vertexAttribPointer(this.positionAttributeLocation, size, type, normalize, stride, offset)
+    // const positions = getPositions(this.points)
+    // this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.positionBuffer)
+    // this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(positions), this.gl.STATIC_DRAW)
+    {
+      const numComponents = 2
+      const type = this.gl.FLOAT
+      const normalize = false
+      const stride = 0
+      const offset = 0
+      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.positionBuffer)
+      this.gl.vertexAttribPointer(this.positionAttributeLocation, numComponents, type, normalize, stride, offset)
+      this.gl.enableVertexAttribArray(this.positionAttributeLocation)
+    }
 
-    this.gl.drawArrays(this.gl.TRIANGLES, 0, positions.length / 2)
+    {
+      const numComponents = 1
+      const type = this.gl.FLOAT
+      const normalize = false
+      const stride = 0
+      const offset = 0
+      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.weightBuffer)
+      this.gl.vertexAttribPointer(this.weightAttributeLocation, numComponents, type, normalize, stride, offset)
+      this.gl.enableVertexAttribArray(this.weightAttributeLocation)
+    }
+
+    this.gl.drawArrays(this.gl.TRIANGLES, 0, this.positions.length / 2)
 
     window.requestAnimationFrame(this.draw)
-  }
-
-  updatePoints(elapsed) {
-    this.circles.forEach((circle) => {
-      const force = this.circles
-        .filter((other) => other !== circle)
-        .reduce(
-          (acc, other) => {
-            const adjusted = { ...other }
-            let xDiff = circle.x - other.x
-            if (xDiff > 1) adjusted.x += 2
-            if (xDiff < -1) adjusted.x -= 2
-            let yDiff = circle.y - other.y
-            if (yDiff > 1) adjusted.y += 2
-            if (yDiff < -1) adjusted.y -= 2
-            const distance = Math.sqrt(Math.pow(circle.x - adjusted.x, 2) + Math.pow(circle.y - adjusted.y, 2))
-            const strength = (-0.00001 * circle.r * adjusted.r) / (distance * distance)
-            return {
-              x: acc.x + (strength * (adjusted.x - circle.x)) / distance,
-              y: acc.y + (strength * (adjusted.y - circle.y)) / distance,
-            }
-          },
-          { x: 0, y: 0 }
-        )
-      circle.dx += force.x
-      circle.dy += force.y
-      if (circle.dx > 0.0005) circle.dx = 0.0005
-      if (circle.dx < -0.0005) circle.dx = -0.0005
-      if (circle.dy > 0.0005) circle.dy = 0.0005
-      if (circle.dy < -0.0005) circle.dy = -0.0005
-
-      circle.x += elapsed * circle.dx
-      if (circle.x < -1) circle.x = 1
-      if (circle.x > 1) circle.x = -1
-
-      circle.y += elapsed * circle.dy
-      if (circle.y < -1) circle.y = 1
-      if (circle.y > 1) circle.y = -1
-    })
-
-    for (let row = 0; row < this.points.length; row++) {
-      for (let col = 0; col < this.points[0].length; col++) {
-        const value = this.circles.reduce((sum, { x, y, r }) => {
-          let xDiff = col * SQUARE_SIZE - 1 - x
-          if (xDiff > 1) xDiff -= 2
-          if (xDiff < -1) xDiff += 2
-          let yDiff = row * SQUARE_SIZE - 1 - y
-          if (yDiff > 1) yDiff -= 2
-          if (yDiff < -1) yDiff += 2
-          return sum + (r * r) / (Math.pow(xDiff, 2) + Math.pow(yDiff, 2))
-        }, 0)
-        this.points[row][col] = value
-      }
-    }
   }
 
   resize() {

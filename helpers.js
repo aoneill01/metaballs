@@ -23,106 +23,109 @@ export function createProgram(gl, vertexShader, fragmentShader) {
   gl.deleteProgram(program)
 }
 
-export function getPositions(points) {
-  const squareSize = 2 / (points.length - 1)
+export function createPoints(cellCount) {
+  return Array.from({ length: cellCount + 1 }, () => new Array(cellCount + 1).fill(0))
+}
+
+export function generateTriangles(cellCount) {
+  const squareSize = 2 / cellCount
   const result = []
-  for (let row = 0; row < points.length - 1; row++) {
-    for (let col = 0; col < points[0].length - 1; col++) {
-      result.push(...positionsForCell(row, col, squareSize, points))
+
+  for (let i = 0; i < cellCount; i++) {
+    for (let j = 0; j < cellCount; j++) {
+      result.push(
+        -1.0 + i * squareSize,
+        -1.0 + j * squareSize,
+        -1.0 + (i + 1) * squareSize,
+        -1.0 + j * squareSize,
+        -1.0 + (i + 1) * squareSize,
+        -1.0 + (j + 1) * squareSize,
+        -1.0 + i * squareSize,
+        -1.0 + j * squareSize,
+        -1.0 + i * squareSize,
+        -1.0 + (j + 1) * squareSize,
+        -1.0 + (i + 1) * squareSize,
+        -1.0 + (j + 1) * squareSize
+      )
     }
   }
+
   return result
 }
 
-function positionsForCell(row, col, squareSize, points) {
-  const topLeft = { x: squareSize * col - 1, y: squareSize * row - 1 }
-  const topRight = { x: squareSize * (col + 1) - 1, y: squareSize * row - 1 }
-  const bottomRight = { x: squareSize * (col + 1) - 1, y: squareSize * (row + 1) - 1 }
-  const bottomLeft = { x: squareSize * col - 1, y: squareSize * (row + 1) - 1 }
+export function generateWeights(points) {
+  const result = []
 
-  const a = {
-    x: squareSize * (col + interpolate(points[row][col], points[row][col + 1])) - 1,
-    y: squareSize * row - 1,
+  for (let row = 0; row < points.length - 1; row++) {
+    for (let col = 0; col < points[row].length - 1; col++) {
+      result.push(
+        points[row][col],
+        points[row + 1][col],
+        points[row + 1][col + 1],
+        points[row][col],
+        points[row][col + 1],
+        points[row + 1][col + 1]
+      )
+    }
   }
-  const b = {
-    x: squareSize * (col + 1) - 1,
-    y: squareSize * (row + interpolate(points[row][col + 1], points[row + 1][col + 1])) - 1,
-  }
-  const c = {
-    x: squareSize * (col + interpolate(points[row + 1][col], points[row + 1][col + 1])) - 1,
-    y: squareSize * (row + 1) - 1,
-  }
-  const d = {
-    x: squareSize * col - 1,
-    y: squareSize * (row + interpolate(points[row][col], points[row + 1][col])) - 1,
-  }
-  let state = getState(points[row][col], points[row][col + 1], points[row + 1][col + 1], points[row + 1][col])
 
-  switch (state) {
-    case 1:
-      return triangle(c, d, bottomLeft)
-    case 2:
-      return triangle(b, c, bottomRight)
-    case 3:
-      return [...triangle(b, d, bottomLeft), ...triangle(bottomLeft, bottomRight, b)]
-    case 4:
-      return triangle(a, b, topRight)
-    case 5:
-      return [...triangle(a, d, topLeft), ...triangle(b, c, bottomRight)]
-    case 6:
-      return [...triangle(a, c, bottomRight), ...triangle(bottomRight, topRight, a)]
-    case 7:
-      return [
-        ...triangle(a, d, bottomLeft),
-        ...triangle(bottomLeft, bottomRight, topRight),
-        ...triangle(topRight, bottomLeft, a),
-      ]
-    case 8:
-      return triangle(a, d, topLeft)
-    case 9:
-      return [...triangle(a, c, bottomLeft), ...triangle(bottomLeft, topLeft, a)]
-    case 10:
-      return [...triangle(a, b, topRight), ...triangle(c, d, bottomLeft)]
-    case 11:
-      return [
-        ...triangle(a, b, bottomRight),
-        ...triangle(bottomRight, bottomLeft, topLeft),
-        ...triangle(topLeft, bottomRight, a),
-      ]
-    case 12:
-      return [...triangle(b, d, topLeft), ...triangle(topLeft, topRight, b)]
-    case 13:
-      return [
-        ...triangle(b, c, bottomLeft),
-        ...triangle(bottomLeft, topLeft, topRight),
-        ...triangle(topRight, bottomLeft, b),
-      ]
-    case 14:
-      return [
-        ...triangle(c, d, topLeft),
-        ...triangle(topLeft, topRight, bottomRight),
-        ...triangle(bottomRight, topLeft, c),
-      ]
-    case 15:
-      return [...triangle(topLeft, topRight, bottomRight), ...triangle(bottomRight, bottomLeft, topLeft)]
-  }
-  return []
+  return result
 }
 
-function getState(a, b, c, d) {
-  return getBit(a) * 8 + getBit(b) * 4 + getBit(c) * 2 + getBit(d) * 1
-}
+export function update(elapsed, points, circles) {
+  const squareSize = 2 / (points.length - 1)
 
-function getBit(value) {
-  return value > 1 ? 1 : 0
-}
+  circles.forEach((circle) => {
+    const force = circles
+      .filter((other) => other !== circle)
+      .reduce(
+        (acc, other) => {
+          const adjusted = { ...other }
+          let xDiff = circle.x - other.x
+          if (xDiff > 1) adjusted.x += 2
+          if (xDiff < -1) adjusted.x -= 2
+          let yDiff = circle.y - other.y
+          if (yDiff > 1) adjusted.y += 2
+          if (yDiff < -1) adjusted.y -= 2
+          const distance = Math.sqrt(Math.pow(circle.x - adjusted.x, 2) + Math.pow(circle.y - adjusted.y, 2))
+          const strength = (-0.00001 * circle.r * adjusted.r) / (distance * distance)
+          return {
+            x: acc.x + (strength * (adjusted.x - circle.x)) / distance,
+            y: acc.y + (strength * (adjusted.y - circle.y)) / distance,
+          }
+        },
+        { x: 0, y: 0 }
+      )
+    circle.dx += force.x
+    circle.dy += force.y
+    if (circle.dx > 0.0005) circle.dx = 0.0005
+    if (circle.dx < -0.0005) circle.dx = -0.0005
+    if (circle.dy > 0.0005) circle.dy = 0.0005
+    if (circle.dy < -0.0005) circle.dy = -0.0005
 
-function triangle(a, b, c) {
-  return [a.x, a.y, b.x, b.y, c.x, c.y]
-}
+    circle.x += elapsed * circle.dx
+    if (circle.x < -1) circle.x = 1
+    if (circle.x > 1) circle.x = -1
 
-function interpolate(first, second) {
-  return (1 - first) / (second - first)
+    circle.y += elapsed * circle.dy
+    if (circle.y < -1) circle.y = 1
+    if (circle.y > 1) circle.y = -1
+  })
+
+  for (let row = 0; row < points.length; row++) {
+    for (let col = 0; col < points[0].length; col++) {
+      const value = circles.reduce((sum, { x, y, r }) => {
+        let xDiff = col * squareSize - 1 - x
+        if (xDiff > 1) xDiff -= 2
+        if (xDiff < -1) xDiff += 2
+        let yDiff = row * squareSize - 1 - y
+        if (yDiff > 1) yDiff -= 2
+        if (yDiff < -1) yDiff += 2
+        return sum + (r * r) / (Math.pow(xDiff, 2) + Math.pow(yDiff, 2))
+      }, 0)
+      points[row][col] = value
+    }
+  }
 }
 
 export const initialCircles = [
