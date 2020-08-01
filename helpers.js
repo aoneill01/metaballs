@@ -1,3 +1,5 @@
+import { interpolate } from './pkg/metaballs.js'
+
 export function createShader(gl, type, source) {
   const shader = gl.createShader(type)
   gl.shaderSource(shader, source)
@@ -119,10 +121,6 @@ function getBit(value) {
 
 function triangle(a, b, c) {
   return [a.x, a.y, b.x, b.y, c.x, c.y]
-}
-
-function interpolate(first, second) {
-  return (1 - first) / (second - first)
 }
 
 export const initialCircles = [

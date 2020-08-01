@@ -1,3 +1,4 @@
+import init from './pkg/metaballs.js'
 import { createShader, createProgram, initialCircles, getPositions } from './helpers.js'
 
 const CELL_COUNT = 80
@@ -165,4 +166,4 @@ class Metaballs extends HTMLElement {
   }
 }
 
-customElements.define('meta-balls', Metaballs)
+init().then((wasm) => customElements.define('meta-balls', Metaballs))
