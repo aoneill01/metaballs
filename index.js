@@ -61,8 +61,10 @@ class Metaballs extends HTMLElement {
       if (factor < 0.0) factor = 0.0;
       factor = 2.0 * factor;
       gl_FragColor = vec4(0.969, 0.145, 0.522, 1.0) * factor + vec4(0.447, 0.035, 0.718, 1) * (1.0 - factor);
-    } else {
+    } else if (v_weight < 1.3) {
       gl_FragColor = vec4(0.298, 0.788, 0.941, 1.0);
+    } else {
+      gl_FragColor = vec4(0.447, 0.035, 0.718, 1);
     }
   }`
 
