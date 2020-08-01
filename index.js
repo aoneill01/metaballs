@@ -8,7 +8,7 @@ import {
   generateWeights,
 } from './helpers.js'
 
-const CELL_COUNT = 80
+const CELL_COUNT = 100
 
 class Metaballs extends HTMLElement {
   constructor() {
@@ -43,7 +43,7 @@ class Metaballs extends HTMLElement {
   attribute vec4 a_position;
   attribute float a_weight;
 
-  varying lowp float v_weight;
+  varying mediump float v_weight;
 
   void main() {
     gl_Position = a_position;
@@ -59,7 +59,7 @@ class Metaballs extends HTMLElement {
     if (v_weight < 1.0) {
       float factor = v_weight - .5;
       if (factor < 0.0) factor = 0.0;
-      gl_FragColor = vec4(0.008, 0.502, 0.565, 1.0) * factor + vec4(0.02, 0.4, 0.553, 1) * (1.0 - factor);
+      gl_FragColor = vec4(0.3, 0.4, 0.6, 1.0) * factor + vec4(0.02, 0.4, 0.553, 1) * (1.0 - factor);
     } else {
       gl_FragColor = vec4(0.008, 0.502, 0.565, 1.0);
     }
