@@ -53,23 +53,18 @@ export function generateTriangles(cellCount) {
   return result
 }
 
-export function generateWeights(points) {
-  const result = []
-
+export function generateWeights(points, weights) {
+  let i = 0
   for (let row = 0; row < points.length - 1; row++) {
     for (let col = 0; col < points[row].length - 1; col++) {
-      result.push(
-        points[row][col],
-        points[row + 1][col],
-        points[row + 1][col + 1],
-        points[row][col],
-        points[row][col + 1],
-        points[row + 1][col + 1]
-      )
+      weights[i++] = points[row][col]
+      weights[i++] = points[row + 1][col]
+      weights[i++] = points[row + 1][col + 1]
+      weights[i++] = points[row][col]
+      weights[i++] = points[row][col + 1]
+      weights[i++] = points[row + 1][col + 1]
     }
   }
-
-  return result
 }
 
 export function update(elapsed, points, circles) {
@@ -123,7 +118,7 @@ export function update(elapsed, points, circles) {
         if (yDiff < -1) yDiff += 2
         return sum + (r * r) / (Math.pow(xDiff, 2) + Math.pow(yDiff, 2))
       }, 0)
-      points[row][col] = value
+      points[row][col] = value > 100 ? 100 : value
     }
   }
 }

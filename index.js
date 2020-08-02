@@ -16,6 +16,7 @@ class Metaballs extends HTMLElement {
 
     this.circles = initialCircles
     this.points = createPoints(CELL_COUNT)
+    this.weights = []
 
     const shadow = this.attachShadow({ mode: 'open' })
 
@@ -56,11 +57,15 @@ class Metaballs extends HTMLElement {
   varying mediump float v_weight;
 
   void main() {
+    float blur_delta = 0.01;
     if (v_weight < 1.0) {
       float factor = v_weight - .5;
       if (factor < 0.0) factor = 0.0;
       factor = 2.0 * factor;
       gl_FragColor = vec4(0.969, 0.145, 0.522, 1.0) * factor + vec4(0.447, 0.035, 0.718, 1) * (1.0 - factor);
+    } else if (v_weight < 1.0 + blur_delta) {
+      float factor = (v_weight - 1.0) / blur_delta;
+      gl_FragColor = vec4(0.298, 0.788, 0.941, 1.0) * factor + vec4(0.969, 0.145, 0.522, 1) * (1.0 - factor);
     } else {
       gl_FragColor = vec4(0.298, 0.788, 0.941, 1.0);
     }
@@ -100,9 +105,9 @@ class Metaballs extends HTMLElement {
 
     this.gl.useProgram(this.program)
 
-    const weights = generateWeights(this.points)
+    generateWeights(this.points, this.weights)
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.weightBuffer)
-    this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(weights), this.gl.STATIC_DRAW)
+    this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(this.weights), this.gl.STATIC_DRAW)
 
     {
       const numComponents = 2
