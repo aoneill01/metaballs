@@ -6,6 +6,7 @@ import {
   update,
   generateTriangles,
   generateWeights,
+  parseColor,
 } from './helpers.js'
 
 const CELL_COUNT = 100
@@ -17,6 +18,9 @@ class Metaballs extends HTMLElement {
     this.circles = initialCircles
     this.points = createPoints(CELL_COUNT)
     this.weights = []
+    this.background = [0.447, 0.035, 0.718, 1]
+    this.glow = [0.969, 0.145, 0.522, 1.0]
+    this.blob = [0.298, 0.788, 0.941, 1.0]
 
     const shadow = this.attachShadow({ mode: 'open' })
 
@@ -56,18 +60,22 @@ class Metaballs extends HTMLElement {
 
   varying mediump float v_weight;
 
+  uniform vec4 u_background;
+  uniform vec4 u_glow;
+  uniform vec4 u_blob;
+
   void main() {
     float blur_delta = 0.01;
     if (v_weight < 1.0) {
       float factor = v_weight - .5;
       if (factor < 0.0) factor = 0.0;
       factor = 2.0 * factor;
-      gl_FragColor = vec4(0.969, 0.145, 0.522, 1.0) * factor + vec4(0.447, 0.035, 0.718, 1) * (1.0 - factor);
+      gl_FragColor = u_glow * factor + u_background * (1.0 - factor);
     } else if (v_weight < 1.0 + blur_delta) {
       float factor = (v_weight - 1.0) / blur_delta;
-      gl_FragColor = vec4(0.298, 0.788, 0.941, 1.0) * factor + vec4(0.969, 0.145, 0.522, 1) * (1.0 - factor);
+      gl_FragColor = u_blob * factor + u_glow * (1.0 - factor);
     } else {
-      gl_FragColor = vec4(0.298, 0.788, 0.941, 1.0);
+      gl_FragColor = u_blob;
     }
   }`
 
@@ -75,6 +83,10 @@ class Metaballs extends HTMLElement {
     const fragmentShader = createShader(this.gl, this.gl.FRAGMENT_SHADER, fragmentShaderSource)
 
     this.program = createProgram(this.gl, vertexShader, fragmentShader)
+
+    this.backgroundUnfiormLocation = this.gl.getUniformLocation(this.program, 'u_background')
+    this.glowUnfiormLocation = this.gl.getUniformLocation(this.program, 'u_glow')
+    this.blobUnfiormLocation = this.gl.getUniformLocation(this.program, 'u_blob')
 
     this.positionAttributeLocation = this.gl.getAttribLocation(this.program, 'a_position')
     this.positions = generateTriangles(CELL_COUNT)
@@ -100,10 +112,11 @@ class Metaballs extends HTMLElement {
 
     this.gl.viewport(0, 0, this.gl.canvas.width, this.gl.canvas.height)
 
-    this.gl.clearColor(0.02, 0.4, 0.553, 1)
-    this.gl.clear(this.gl.COLOR_BUFFER_BIT)
-
     this.gl.useProgram(this.program)
+
+    this.gl.uniform4fv(this.backgroundUnfiormLocation, this.background)
+    this.gl.uniform4fv(this.glowUnfiormLocation, this.glow)
+    this.gl.uniform4fv(this.blobUnfiormLocation, this.blob)
 
     generateWeights(this.points, this.weights)
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.weightBuffer)
@@ -144,6 +157,14 @@ class Metaballs extends HTMLElement {
       this.canvas.width = displayWidth
       this.canvas.height = displayHeight
     }
+  }
+
+  static get observedAttributes() {
+    return ['background', 'glow', 'blob']
+  }
+
+  attributeChangedCallback(name, oldValue, newValue) {
+    this[name] = parseColor(newValue)
   }
 }
 

@@ -123,6 +123,15 @@ export function update(elapsed, points, circles) {
   }
 }
 
+export function parseColor(rgb) {
+  return [
+    parseInt(rgb.substring(1, 3), 16) / 255,
+    parseInt(rgb.substring(3, 5), 16) / 255,
+    parseInt(rgb.substring(5, 7), 16) / 255,
+    1.0,
+  ]
+}
+
 export const initialCircles = [
   {
     x: 0.5,

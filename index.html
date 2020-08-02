@@ -1,20 +1,43 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Example</title>
-  <style>
-    html, body {
-      margin: 0;
-      overflow: hidden;
-      padding: 0;
-    }
-  </style>
-</head>
-<body>
-  <meta-balls></meta-balls>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Example</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        position: relative;
+      }
+      meta-balls {
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: 0;
+      }
+      input {
+        margin: 10px 5px 5px 10px;
+        position: relative;
+        z-index: 1;
+      }
+    </style>
+  </head>
+  <body>
+    <meta-balls background="#7209b7" glow="#f72585" blob="#4cc9f0"></meta-balls>
+    <input type="color" data-color="background" value="#7209b7" />
+    <input type="color" data-color="glow" value="#f72585" />
+    <input type="color" data-color="blob" value="#4cc9f0" />
 
-  <script src="./index.js" type="module"></script>
-</body>
+    <script src="./index.js" type="module"></script>
+
+    <script>
+      document.querySelectorAll('input[type="color"]').forEach((colorPicker) =>
+        colorPicker.addEventListener('input', (event) => {
+          document.querySelector('meta-balls').setAttribute(colorPicker.dataset.color, event.target.value)
+        })
+      )
+    </script>
+  </body>
 </html>
