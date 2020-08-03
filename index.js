@@ -27,6 +27,9 @@ class Metaballs extends HTMLElement {
     const style = document.createElement('style')
     style.textContent = `
       canvas {
+        left: 0;
+        position: fixed;
+        top: 0;
         width: 100vmax;
       }
     `
