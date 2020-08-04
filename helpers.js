@@ -83,7 +83,7 @@ export function update(elapsed, points, circles) {
           if (yDiff > 1) adjusted.y += 2
           if (yDiff < -1) adjusted.y -= 2
           const distance = Math.sqrt(Math.pow(circle.x - adjusted.x, 2) + Math.pow(circle.y - adjusted.y, 2))
-          const strength = (-0.00001 * circle.r * adjusted.r) / (distance * distance)
+          const strength = (-0.000001 * circle.r * adjusted.r) / (distance * distance)
           return {
             x: acc.x + (strength * (adjusted.x - circle.x)) / distance,
             y: acc.y + (strength * (adjusted.y - circle.y)) / distance,
@@ -91,18 +91,18 @@ export function update(elapsed, points, circles) {
         },
         { x: 0, y: 0 }
       )
-    circle.dx += force.x
-    circle.dy += force.y
+    circle.dx += force.x * elapsed
+    circle.dy += force.y * elapsed
     if (circle.dx > 0.0005) circle.dx = 0.0005
     if (circle.dx < -0.0005) circle.dx = -0.0005
     if (circle.dy > 0.0005) circle.dy = 0.0005
     if (circle.dy < -0.0005) circle.dy = -0.0005
 
-    circle.x += elapsed * circle.dx
+    circle.x += circle.dx * elapsed
     if (circle.x < -1) circle.x = 1
     if (circle.x > 1) circle.x = -1
 
-    circle.y += elapsed * circle.dy
+    circle.y += circle.dy * elapsed
     if (circle.y < -1) circle.y = 1
     if (circle.y > 1) circle.y = -1
   })

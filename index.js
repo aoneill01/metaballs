@@ -21,6 +21,7 @@ class Metaballs extends HTMLElement {
     this.background = [0.447, 0.035, 0.718, 1]
     this.glow = [0.969, 0.145, 0.522, 1.0]
     this.blob = [0.298, 0.788, 0.941, 1.0]
+    this.speed = 1.0
 
     const shadow = this.attachShadow({ mode: 'open' })
 
@@ -108,7 +109,7 @@ class Metaballs extends HTMLElement {
     if (this.previous === undefined) this.previous = timestamp
     let elapsed = timestamp - this.previous
     if (!elapsed || elapsed > 50) elapsed = 50
-    update(elapsed, this.points, this.circles)
+    update(elapsed * this.speed, this.points, this.circles)
     this.previous = timestamp
 
     this.resize()
@@ -163,11 +164,15 @@ class Metaballs extends HTMLElement {
   }
 
   static get observedAttributes() {
-    return ['background', 'glow', 'blob']
+    return ['background', 'glow', 'blob', 'speed']
   }
 
   attributeChangedCallback(name, oldValue, newValue) {
-    this[name] = parseColor(newValue)
+    if (name === 'speed') {
+      this.speed = newValue
+    } else {
+      this[name] = parseColor(newValue)
+    }
   }
 }
 

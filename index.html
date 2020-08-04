@@ -17,8 +17,14 @@
         border-radius: 3px;
         display: inline-flex;
         margin: 10px;
+        opacity: 0.3;
         padding: 10px;
         position: relative;
+        transition: opacity 400ms;
+      }
+
+      .color-picker:hover {
+        opacity: 1;
       }
 
       .color-picker input {
@@ -36,6 +42,7 @@
       <input type="color" data-color="background" value="#7209b7" />
       <input type="color" data-color="glow" value="#f72585" />
       <input type="color" data-color="blob" value="#4cc9f0" />
+      <input type="range" min="0" max="1" step=".01" value="1" />
     </div>
 
     <script src="./index.js" type="module"></script>
@@ -46,6 +53,10 @@
           document.querySelector('meta-balls').setAttribute(colorPicker.dataset.color, colorPicker.value)
         })
       )
+
+      document.querySelector('input[type="range"]').addEventListener('input', (event) => {
+        document.querySelector('meta-balls').setAttribute('speed', event.target.value)
+      })
     </script>
   </body>
 </html>
