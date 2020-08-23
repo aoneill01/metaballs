@@ -1,0 +1,19 @@
+[package]
+name = "metaballs"
+version = "0.1.0"
+authors = ["Andy O'Neill <aoneill01@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+wasm-bindgen = { version = "0.2", features = ["serde-serialize"] }
+wee_alloc = { version = "0.4.5", optional = true }
+js-sys = "0.3.44"
+
+[features]
+default = ["wee_alloc"]

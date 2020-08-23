@@ -1,3 +1,4 @@
+import init, { MetaballState } from './pkg/metaballs.js'
 import {
   createShader,
   createProgram,
@@ -5,7 +6,6 @@ import {
   createPoints,
   update,
   generateTriangles,
-  generateWeights,
   parseColor,
 } from './helpers.js'
 
@@ -43,6 +43,10 @@ class Metaballs extends HTMLElement {
     shadow.appendChild(this.canvas)
 
     this.initWebgl()
+    this.metaballState = MetaballState.new()
+
+    this.draw = this.draw.bind(this)
+    window.requestAnimationFrame(this.draw)
   }
 
   initWebgl() {
@@ -100,9 +104,6 @@ class Metaballs extends HTMLElement {
 
     this.weightAttributeLocation = this.gl.getAttribLocation(this.program, 'a_weight')
     this.weightBuffer = this.gl.createBuffer()
-
-    this.draw = this.draw.bind(this)
-    window.requestAnimationFrame(this.draw)
   }
 
   draw(timestamp) {
@@ -122,9 +123,8 @@ class Metaballs extends HTMLElement {
     this.gl.uniform4fv(this.glowUnfiormLocation, this.glow)
     this.gl.uniform4fv(this.blobUnfiormLocation, this.blob)
 
-    generateWeights(this.points, this.weights)
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.weightBuffer)
-    this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(this.weights), this.gl.STATIC_DRAW)
+    this.gl.bufferData(this.gl.ARRAY_BUFFER, this.metaballState.update_weights(this.circles), this.gl.STATIC_DRAW)
 
     {
       const numComponents = 2
@@ -176,4 +176,6 @@ class Metaballs extends HTMLElement {
   }
 }
 
-customElements.define('meta-balls', Metaballs)
+init().then((wasm) => {
+  customElements.define('meta-balls', Metaballs)
+})
