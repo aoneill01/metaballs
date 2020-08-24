@@ -31,8 +31,8 @@
         margin-right: 10px;
       }
 
-      .color-picker input:last-child {
-        margin-right: 0;
+      .color-picker input[type='checkbox'] {
+        margin: auto;
       }
     </style>
   </head>
@@ -43,6 +43,7 @@
       <input type="color" data-color="glow" value="#f72585" />
       <input type="color" data-color="blob" value="#4cc9f0" />
       <input type="range" min="0" max="1" step=".01" value="1" />
+      <input type="checkbox" />
     </div>
 
     <script src="./index.js" type="module"></script>
@@ -56,6 +57,10 @@
 
       document.querySelector('input[type="range"]').addEventListener('input', (event) => {
         document.querySelector('meta-balls').setAttribute('speed', event.target.value)
+      })
+
+      document.querySelector('input[type="checkbox"]').addEventListener('input', (event) => {
+        document.querySelector('meta-balls').setAttribute('mouse', event.target.checked ? 'mouse' : '')
       })
     </script>
   </body>

@@ -16,12 +16,15 @@ class Metaballs extends HTMLElement {
     super()
 
     this.circles = initialCircles
+    this.cursor = { x: 0, y: 0 }
+    // this.circles.unshift({ ...this.cursor, r: 0.2 })
     this.points = createPoints(CELL_COUNT)
     this.weights = []
     this.background = [0.447, 0.035, 0.718, 1]
     this.glow = [0.969, 0.145, 0.522, 1.0]
     this.blob = [0.298, 0.788, 0.941, 1.0]
     this.speed = 1.0
+    this.mouse = false
 
     const shadow = this.attachShadow({ mode: 'open' })
 
@@ -38,6 +41,7 @@ class Metaballs extends HTMLElement {
     this.canvas = document.createElement('canvas')
     this.canvas.width = 800
     this.canvas.height = 800
+    this.canvas.addEventListener('mousemove', this.mouseMove.bind(this))
 
     shadow.appendChild(style)
     shadow.appendChild(this.canvas)
@@ -111,6 +115,10 @@ class Metaballs extends HTMLElement {
     let elapsed = timestamp - this.previous
     if (!elapsed || elapsed > 50) elapsed = 50
     update(elapsed * this.speed, this.points, this.circles)
+    if (this.mouse) {
+      this.circles[0].x = this.cursor.x
+      this.circles[0].y = this.cursor.y
+    }
     this.previous = timestamp
 
     this.resize()
@@ -153,6 +161,15 @@ class Metaballs extends HTMLElement {
     window.requestAnimationFrame(this.draw)
   }
 
+  mouseMove(event) {
+    const rect = this.canvas.getBoundingClientRect()
+
+    this.cursor = {
+      y: -1 + 2 * ((event.clientX - rect.left) / this.canvas.clientWidth),
+      x: -1 + -2 * ((event.clientY - rect.top) / this.canvas.clientHeight),
+    }
+  }
+
   resize() {
     var displayWidth = this.canvas.clientWidth
     var displayHeight = this.canvas.clientHeight
@@ -164,14 +181,19 @@ class Metaballs extends HTMLElement {
   }
 
   static get observedAttributes() {
-    return ['background', 'glow', 'blob', 'speed']
+    return ['background', 'glow', 'blob', 'speed', 'mouse']
   }
 
   attributeChangedCallback(name, oldValue, newValue) {
-    if (name === 'speed') {
-      this.speed = newValue
-    } else {
-      this[name] = parseColor(newValue)
+    switch (name) {
+      case 'speed':
+        this.speed = newValue
+        break
+      case 'mouse':
+        this.mouse = !!newValue
+        break
+      default:
+        this[name] = parseColor(newValue)
     }
   }
 }
